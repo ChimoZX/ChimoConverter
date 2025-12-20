@@ -4,3 +4,4 @@ pillow
 requests
 auto-py-to-exe
 packaging
+pyinstaller
