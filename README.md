@@ -15,3 +15,5 @@ Sigue estos pasos:
 
 ```bash
 pip install -r requirements.txt
+
+pyinstaller --onefile --noconsole --name="chimo converter" --icon=ico.ico converter.py
