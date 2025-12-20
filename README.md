@@ -25,4 +25,4 @@ python3 -m PyInstaller --noconfirm --onefile --windowed \
 converterV2.py
 
 Hacer ejecutable en windows
-pyinstaller --noconsole --onefile --icon=icon.ico --add-data "icon.ico;." --add-data "icon.png;." --add-binary "ffmpeg.exe;." --collect-all customtkinter ChimoConverter.py
+pyinstaller --noconsole --onefile --icon=icon.ico --add-data "icon.ico;." --add-data "icon.png;." --add-binary "ffmpeg.exe;." --add-binary "ffprobe.exe;." --collect-all customtkinter ChimoConverter.py
