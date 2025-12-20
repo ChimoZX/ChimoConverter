@@ -17,3 +17,5 @@ Sigue estos pasos:
 pip install -r requirements.txt
 
 pyinstaller --onefile --noconsole --name="chimo converter" --icon=ico.ico converter.py
+
+pyinstaller --noconsole --onefile --icon=ico.ico --add-binary "ffmpeg.exe;." --collect-all customtkinter converter.py
