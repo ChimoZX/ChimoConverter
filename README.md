@@ -16,6 +16,13 @@ Sigue estos pasos:
 ```bash
 pip install -r requirements.txt
 
-pyinstaller --onefile --noconsole --name="chimo converter" --icon=ico.ico converter.py
+Hacer ejecutable en linux
+python3 -m PyInstaller --noconfirm --onefile --windowed \
+--add-data "icon.png:." \
+--collect-all customtkinter \
+--hidden-import "PIL._tkinter_finder" \
+--copy-metadata "pillow" \
+converterV2.py
 
+Hacer ejecutable en windows
 pyinstaller --noconsole --onefile --icon=ico.ico --add-binary "ffmpeg.exe;." --collect-all customtkinter converter.py
