@@ -17,12 +17,7 @@ Sigue estos pasos:
 pip install -r requirements.txt
 
 Hacer ejecutable en linux
-python3 -m PyInstaller --noconfirm --onefile --windowed \
---add-data "icon.png:." \
---collect-all customtkinter \
---hidden-import "PIL._tkinter_finder" \
---copy-metadata "pillow" \
-converterV2.py
+python3 -m PyInstaller --noconfirm --onefile --windowed --add-data "icon.png:." --add-binary "$(which ffprobe):." --collect-all customtkinter --hidden-import "PIL._tkinter_finder" --copy-metadata "pillow" ChimoConverter.py
 
 Hacer ejecutable en windows
 pyinstaller --noconsole --onefile --icon=icon.ico --add-data "icon.ico;." --add-data "icon.png;." --add-binary "ffmpeg.exe;." --add-binary "ffprobe.exe;." --collect-all customtkinter ChimoConverter.py
