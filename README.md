@@ -5,11 +5,11 @@ Convertidor de YouTube a MP3 y MP4 con carátulas automáticas y soporte para pl
 ![Python](https://img.shields.io/badge/Python-3.11-blue)
 ![Estado](https://img.shields.io/badge/Estado-Terminado-success)
 
-## Instalacion en Windows
+## Instalacion 
 
 Sigue estos pasos:
 
-1. **Instalar Python:** Asegúrate de marcar la casilla **"Add Python to PATH"** al instalarlo.
+1. **Instalar Python:** Asegúrate de marcar la casilla **"Add Python to PATH"** al instalarlo. (WIndows)
 2. **Descargar el código:** Clona este repositorio o descarga el ZIP.
 3. **Instalar dependencias:** Abre la terminal en la carpeta del proyecto y ejecuta:
 
