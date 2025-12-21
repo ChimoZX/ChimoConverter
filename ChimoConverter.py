@@ -936,7 +936,7 @@ class NeonConverter(ctk.CTk):
                         self.limpiar_basura()
                         return
 
-                    time.sleep(4)
+                    time.sleep(2)
                     archivo_descargado = buscar_archivo_descargado(ruta, titulo)
 
                     if archivo_descargado:
