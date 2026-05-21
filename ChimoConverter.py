@@ -14,14 +14,12 @@ import subprocess
 import traceback
 import glob
 
-# --- CONFIGURACIÓN VISUAL ---
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("dark-blue")
 
-# --- DETECCIÓN DE SISTEMA OPERATIVO ---
+
 ES_WINDOWS = os.name == 'nt'
 
-# --- FIX: ESCALADO DE WINDOWS (DPI AWARENESS) ---
 if ES_WINDOWS:
     try:
         import ctypes
@@ -32,7 +30,6 @@ if ES_WINDOWS:
 ctk.set_widget_scaling(1.0)
 ctk.set_window_scaling(1.0)
 
-# PALETA DE COLORES
 COLOR_FONDO = "#080808"
 COLOR_FRAME = "#1c1c1c"
 COLOR_INPUT = "#2b2b2b"
@@ -70,11 +67,10 @@ def obtener_configuracion_ffmpeg():
     nombre_ffprobe = "ffprobe.exe" if ES_WINDOWS else "ffprobe"
     ruta_ffprobe = os.path.join(base_path, nombre_ffprobe)
     
-    # Verificar si existen en el directorio
+
     if os.path.exists(ruta_ffmpeg) and os.path.exists(ruta_ffprobe):
         return ruta_ffmpeg, ruta_ffprobe
     
-    # Si no están en el directorio, buscar en PATH
     try:
         subprocess.run(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         subprocess.run(["ffprobe", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -88,7 +84,6 @@ def obtener_mejor_thumbnail_url(info_video):
         # Intentar obtener la mejor calidad disponible
         thumbnails = info_video.get('thumbnails', [])
         
-        # Ordenar por calidad (maxresdefault es la mejor)
         calidades_preferidas = ['maxresdefault', 'sddefault', 'hqdefault', 'default']
         
         for calidad in calidades_preferidas:
@@ -100,11 +95,9 @@ def obtener_mejor_thumbnail_url(info_video):
         
         # Si no encuentra por ID, buscar la de mayor resolución
         if thumbnails:
-            # Ordenar por tamaño (ancho x alto)
             thumbnails.sort(key=lambda x: x.get('width', 0) * x.get('height', 0), reverse=True)
             return thumbnails[0].get('url')
         
-        # Último recurso: thumbnail directo
         return info_video.get('thumbnail')
         
     except:
@@ -159,10 +152,10 @@ def descargar_caratula_mejorada(url, ruta_destino):
                 
                 # Verificar que se guardó correctamente
                 if os.path.exists(ruta_destino) and os.path.getsize(ruta_destino) > 1024:
-                    print(f"💾 Carátula guardada: {ruta_destino} ({os.path.getsize(ruta_destino)} bytes)")
+                    print(f" Carátula guardada: {ruta_destino} ({os.path.getsize(ruta_destino)} bytes)")
                     return ruta_destino
                 else:
-                    print(f"⚠️ Carátula guardada pero archivo muy pequeño o no existe")
+                    print(f" Carátula guardada pero archivo muy pequeño o no existe")
                     return None
                     
             except Exception as img_error:
@@ -173,7 +166,7 @@ def descargar_caratula_mejorada(url, ruta_destino):
             return None
             
     except requests.exceptions.Timeout:
-        print(f"⏰ Timeout al descargar carátula")
+        print(f" Timeout al descargar carátula")
         return None
     except requests.exceptions.RequestException as e:
         print(f"❌ Error de red: {e}")
@@ -216,7 +209,7 @@ def verificar_caratula_con_ffprobe(archivo_audio):
             return False
             
     except Exception as e:
-        print(f"❌ Error verificando carátula con FFprobe: {e}")
+        print(f" Error verificando carátula con FFprobe: {e}")
         return False
 
 def incrustar_caratula_con_ffprobe(audio_path, imagen_path, titulo=None, artista=None):
@@ -265,10 +258,9 @@ def incrustar_caratula_con_ffprobe(audio_path, imagen_path, titulo=None, artista
 def buscar_archivo_descargado(directorio, titulo_aproximado):
     """Busca archivo descargado admitiendo MKV y MP4"""
     try:
-        # Añadimos .mkv a la lista de prioridades
         extensiones = ['.mp4', '.mkv', '.mp3', '.m4a', '.webm', '.opus', '.flac', '.wav']
         
-        # Limpiar el título para la búsqueda (quitar caracteres raros)
+        # Limpiar el título para la búsqueda 
         titulo_limpio = re.sub(r'[^\w\s]', '', titulo_aproximado).lower()
         palabras_clave = titulo_limpio.split()[:3] 
 
@@ -281,11 +273,11 @@ def buscar_archivo_descargado(directorio, titulo_aproximado):
                 continue
                 
             if any(nombre_f.endswith(ext) for ext in extensiones):
-                # Si el nombre del archivo contiene las palabras clave del título
+
                 if any(p in nombre_f for p in palabras_clave if len(p) > 2):
                     return os.path.join(directorio, archivo)
 
-        # 2. Si falla lo anterior, buscar el archivo más reciente de la carpeta
+
         archivos_validos = []
         for ext in extensiones:
             archivos_validos.extend(glob.glob(os.path.join(directorio, f'*{ext}')))
@@ -295,7 +287,7 @@ def buscar_archivo_descargado(directorio, titulo_aproximado):
                           if not any(f.endswith(tmp) for tmp in ['.part', '.ytdl', '.temp'])]
         
         if archivos_validos:
-            # El archivo creado hace menos de 1 minuto es probablemente el nuestro
+
             archivos_validos.sort(key=os.path.getmtime, reverse=True)
             return archivos_validos[0]
             
@@ -347,7 +339,7 @@ class NeonConverter(ctk.CTk):
         self.cancelar_flag = True
 
         if self.hilo_descarga and self.hilo_descarga.is_alive():
-            self.lbl_estado.configure(text="🛑 Deteniendo...", text_color=COLOR_ERROR)
+            self.lbl_estado.configure(text=" Deteniendo...", text_color=COLOR_ERROR)
             self.update()
             time.sleep(1)
 
@@ -390,10 +382,10 @@ class NeonConverter(ctk.CTk):
             popup.resizable(False, False)
             popup.configure(fg_color=COLOR_FRAME)
             
-            # --- SOLUCIÓN RADICAL PARA EL ICONO AZUL ---
+
             def forzar_icono():
                 try:
-                    # 1. Intentamos obtener la ruta del icono igual que en la ventana principal
+
                     nombre_ico = "icon.ico" if ES_WINDOWS else "icon.png"
                     if getattr(sys, 'frozen', False):
                         ruta_ico = os.path.join(sys._MEIPASS, nombre_ico)
@@ -402,24 +394,22 @@ class NeonConverter(ctk.CTk):
                     
                     if os.path.exists(ruta_ico):
                         if ES_WINDOWS:
-                            # Forzar el icono varias veces si es necesario
+
                             popup.iconbitmap(ruta_ico)
-                            # Este comando adicional ayuda a Windows a refrescar la barra
+
                             popup.after(100, lambda: popup.iconbitmap(ruta_ico))
                         else:
                             img_ico = ImageTk.PhotoImage(Image.open(ruta_ico))
                             popup.wm_iconphoto(True, img_ico)
                 except:
                     pass
-            
-            # Le damos 200ms para que la ventana se cree del todo antes de cambiar el icono
+
             popup.after(200, forzar_icono)
-            # -------------------------------------------
+
 
             popup.transient(self)
             popup.grab_set()
 
-            # Centrado de ventana
             try:
                 popup.update_idletasks()
                 x = self.winfo_x() + (self.winfo_width() // 2) - (popup.winfo_width() // 2)
@@ -455,7 +445,7 @@ class NeonConverter(ctk.CTk):
 
     def accion_cancelar(self):
         self.cancelar_flag = True
-        self.lbl_estado.configure(text="🛑 DETENIENDO Y LIMPIANDO...", text_color=COLOR_ERROR)
+        self.lbl_estado.configure(text=" DETENIENDO Y LIMPIANDO...", text_color=COLOR_ERROR)
         self.btn_cancelar.configure(state="disabled")
 
     def crear_interfaz(self):
@@ -574,10 +564,10 @@ class NeonConverter(ctk.CTk):
         frame_info.pack(pady=5, fill="x", padx=10)
 
         if self.ruta_ffmpeg and self.ruta_ffprobe:
-            ctk.CTkLabel(frame_info, text="✅ Carátulas verificadas con FFprobe", 
+            ctk.CTkLabel(frame_info, text=" Carátulas verificadas con FFprobe", 
                          font=("Segoe UI", 9), text_color=COLOR_EXITO).pack()
         else:
-            ctk.CTkLabel(frame_info, text="⚠️ Sin FFmpeg/FFprobe: Carátulas no disponibles", 
+            ctk.CTkLabel(frame_info, text=" Sin FFmpeg/FFprobe: Carátulas no disponibles", 
                          font=("Segoe UI", 9), text_color=COLOR_AMARILLO).pack()
 
         self.switch_playlist_audio = ctk.CTkSwitch(self.tab_audio, text="Descargar Playlist Completa", variable=self.playlist_mode,
@@ -1025,7 +1015,7 @@ class NeonConverter(ctk.CTk):
 
         if not exito:
             self.progress_bar.set(0)
-            self.lbl_estado.configure(text="🚫 Error", text_color=COLOR_ROJO)
+            self.lbl_estado.configure(text=" Error", text_color=COLOR_ROJO)
             if error and "CANCELADO" not in error.upper():
                 self.crear_popup("Error", error[:100], es_error=True)
 
