@@ -92,8 +92,7 @@ def obtener_mejor_thumbnail_url(info_video):
                     url = thumb.get('url')
                     if url:
                         return url
-        
-        # Si no encuentra por ID, buscar la de mayor resolución
+
         if thumbnails:
             thumbnails.sort(key=lambda x: x.get('width', 0) * x.get('height', 0), reverse=True)
             return thumbnails[0].get('url')
@@ -129,7 +128,6 @@ def descargar_caratula_mejorada(url, ruta_destino):
             'Referer': 'https://www.youtube.com/',
         }
         
-        # Intentar descargar con timeout
         response = requests.get(url, headers=headers, timeout=15)
         
         if response.status_code == 200:
@@ -202,10 +200,10 @@ def verificar_caratula_con_ffprobe(archivo_audio):
         
         # Si encuentra stream de video (carátula), retorna True
         if result.returncode == 0 and 'video' in result.stdout.lower():
-            print(f"✅ FFprobe confirma: El archivo tiene carátula incrustada")
+            print(f" FFprobe confirma: El archivo tiene carátula incrustada")
             return True
         else:
-            print(f"⚠️ FFprobe: No se detectó carátula en el archivo")
+            print(f" FFprobe: No se detectó carátula en el archivo")
             return False
             
     except Exception as e:
