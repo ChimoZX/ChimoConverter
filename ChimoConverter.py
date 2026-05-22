@@ -47,7 +47,7 @@ COLOR_VERDE = "#4caf50"
 
 ARCHIVO_CONFIG = "config.json"
 
-# HEADER "ANTI-BOT"
+
 HEADERS_NAVEGADOR = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 }
@@ -109,7 +109,7 @@ def descargar_caratula_mejorada(url, ruta_destino):
         print(f"   URL: {url}")
         
         if not url or url == 'None' or not isinstance(url, str):
-            print(f"❌ URL de carátula inválida o vacía")
+            print(f" URL de carátula inválida o vacía")
             return None
         
         # Asegurar que sea una URL completa
@@ -120,7 +120,7 @@ def descargar_caratula_mejorada(url, ruta_destino):
         
         print(f"   URL procesada: {url}")
         
-        # Headers simples pero efectivos
+    
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
@@ -131,24 +131,23 @@ def descargar_caratula_mejorada(url, ruta_destino):
         response = requests.get(url, headers=headers, timeout=15)
         
         if response.status_code == 200:
-            print(f"✅ Imagen descargada exitosamente ({len(response.content)} bytes)")
+            print(f" Imagen descargada exitosamente ({len(response.content)} bytes)")
             
-            # Procesar la imagen
+
             try:
                 img = Image.open(BytesIO(response.content))
                 
-                # Convertir a JPEG si es necesario
+
                 if img.mode != 'RGB':
                     img = img.convert('RGB')
                 
-                # Asegurar extensión .jpg
+
                 if not ruta_destino.endswith('.jpg'):
                     ruta_destino = os.path.splitext(ruta_destino)[0] + '.jpg'
                 
-                # Guardar imagen
                 img.save(ruta_destino, 'JPEG', quality=90)
                 
-                # Verificar que se guardó correctamente
+
                 if os.path.exists(ruta_destino) and os.path.getsize(ruta_destino) > 1024:
                     print(f" Carátula guardada: {ruta_destino} ({os.path.getsize(ruta_destino)} bytes)")
                     return ruta_destino
@@ -157,20 +156,20 @@ def descargar_caratula_mejorada(url, ruta_destino):
                     return None
                     
             except Exception as img_error:
-                print(f"❌ Error procesando imagen: {img_error}")
+                print(f" Error procesando imagen: {img_error}")
                 return None
         else:
-            print(f"❌ Error HTTP {response.status_code} al descargar carátula")
+            print(f" Error HTTP {response.status_code} al descargar carátula")
             return None
             
     except requests.exceptions.Timeout:
         print(f" Timeout al descargar carátula")
         return None
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error de red: {e}")
+        print(f" Error de red: {e}")
         return None
     except Exception as e:
-        print(f"❌ Error inesperado: {e}")
+        print(f" Error inesperado: {e}")
         return None
 
 def verificar_caratula_con_ffprobe(archivo_audio):
@@ -178,14 +177,14 @@ def verificar_caratula_con_ffprobe(archivo_audio):
     try:
         ffmpeg_path, ffprobe_path = obtener_configuracion_ffmpeg()
         if not ffprobe_path:
-            print("❌ FFprobe no disponible para verificación")
+            print(" FFprobe no disponible para verificación")
             return False
         
         if not os.path.exists(archivo_audio):
-            print(f"❌ Archivo no existe: {archivo_audio}")
+            print(f" Archivo no existe: {archivo_audio}")
             return False
         
-        # Comando para verificar streams
+
         cmd = [
             ffprobe_path,
             '-v', 'error',
@@ -198,7 +197,7 @@ def verificar_caratula_con_ffprobe(archivo_audio):
         result = subprocess.run(cmd, capture_output=True, text=True,
                               creationflags=subprocess.CREATE_NO_WINDOW if ES_WINDOWS else 0)
         
-        # Si encuentra stream de video (carátula), retorna True
+
         if result.returncode == 0 and 'video' in result.stdout.lower():
             print(f" FFprobe confirma: El archivo tiene carátula incrustada")
             return True
@@ -219,24 +218,22 @@ def incrustar_caratula_con_ffprobe(audio_path, imagen_path, titulo=None, artista
         
         ext = os.path.splitext(audio_path)[1].lower()
         temp_output = audio_path + '.temp_tags' + ext
-        
-        # Comando base
+
         cmd = [ffmpeg_path, '-y', '-i', audio_path, '-i', imagen_path]
         
-        # Configuración por formato
+
         if ext == '.mp3':
             cmd.extend(['-map', '0:a', '-map', '1', '-c:a', 'copy', '-c:v', 'mjpeg', 
                         '-disposition:v', 'attached_pic', '-id3v2_version', '3'])
         elif ext == '.m4a':
-            # Para AAC/M4A se usa la disposición cover
+
             cmd.extend(['-map', '0:a', '-map', '1', '-c:a', 'copy', '-c:v', 'mjpeg', 
                         '-disposition:v', 'attached_pic'])
         else:
-            # Para FLAC, OPUS, OGG
+
             cmd.extend(['-map', '0:a', '-map', '1', '-c:a', 'copy', '-metadata:s:v', 
                         'title="Album cover"', '-metadata:s:v', 'comment="Cover (Front)"'])
 
-        # Metadatos comunes
         if titulo: cmd.extend(['-metadata', f'title={titulo}'])
         if artista: cmd.extend(['-metadata', f'artist={artista}'])
         
@@ -266,7 +263,7 @@ def buscar_archivo_descargado(directorio, titulo_aproximado):
         archivos_en_carpeta = os.listdir(directorio)
         for archivo in archivos_en_carpeta:
             nombre_f = archivo.lower()
-            # Ignorar temporales
+
             if any(ext in nombre_f for ext in ['.part', '.ytdl', '.temp', '.tmp']):
                 continue
                 
@@ -572,7 +569,7 @@ class NeonConverter(ctk.CTk):
                                                    progress_color=COLOR_MORADO, button_color="white")
         self.switch_playlist_audio.pack(pady=5)
 
-        # CARPETA
+
         self.frame_ruta = ctk.CTkFrame(self.scroll_frame, fg_color="transparent")
         self.frame_ruta.pack(fill="x", padx=60, pady=(5, 5))
         self.entry_ruta = ctk.CTkEntry(self.frame_ruta, textvariable=self.ruta_var, state="disabled",
@@ -581,14 +578,13 @@ class NeonConverter(ctk.CTk):
         ctk.CTkButton(self.frame_ruta, text="SELECCIONAR CARPETA", width=160, height=35, command=self.seleccionar_carpeta,
                       fg_color=COLOR_INPUT, hover_color="#444", corner_radius=10, font=("Segoe UI", 11, "bold")).pack(side="left")
 
-        # ZONA DESCARGA
         self.progress_bar = ctk.CTkProgressBar(self.scroll_frame, width=500, progress_color=COLOR_MORADO, fg_color=COLOR_INPUT, height=12)
         self.progress_bar.set(0)
         self.progress_bar.pack(pady=(0, 2))
         self.lbl_estado = ctk.CTkLabel(self.scroll_frame, text="Listo para descargar", text_color="gray", font=("Segoe UI", 11))
         self.lbl_estado.pack(pady=(0, 10))
 
-        # BOTONES
+
         self.frame_botones = ctk.CTkFrame(self.scroll_frame, fg_color="transparent")
         self.frame_botones.pack(pady=(0, 30))
         self.btn_descargar = ctk.CTkButton(self.frame_botones, text="DESCARGAR ARCHIVO", command=self.hilo_descargar,
@@ -809,14 +805,10 @@ class NeonConverter(ctk.CTk):
     def proceso_descarga_con_caratulas(self):
             """Proceso de descarga corregido para .exe: Incluye ffmpeg_location"""
             try:
-                # --- DETECTAR RUTA DE BINARIOS PARA PYINSTALLER ---
                 if getattr(sys, 'frozen', False):
-                    # Si es un .exe, los binarios están en la carpeta temporal _MEIPASS
                     ruta_binarios = sys._MEIPASS
                 else:
-                    # Si es un .py, están en la carpeta del script
                     ruta_binarios = os.path.dirname(os.path.abspath(__file__))
-                # --------------------------------------------------
 
                 url_in = self.entry_url.get().strip()
                 ruta = self.ruta_var.get()
@@ -847,7 +839,7 @@ class NeonConverter(ctk.CTk):
 
                     opts = {
                         'format': 'bestaudio/best',
-                        'ffmpeg_location': ruta_binarios,  # <--- CLAVE PARA EL EXE
+                        'ffmpeg_location': ruta_binarios,  
                         'outtmpl': os.path.join(ruta, '%(title)s.%(ext)s'),
                         'restrictfilenames': True,
                         'overwrites': True,
@@ -889,7 +881,6 @@ class NeonConverter(ctk.CTk):
                     else:
                         self.after(0, lambda: self.finalizar(False, "No se encontró el archivo de audio"))
 
-                # --- SECCIÓN DE VIDEO ---
                 else:
                     calidad_sel = self.combo_calidad.get()
                     resolucion = self.max_resolucion if calidad_sel == "Mejor Calidad (Auto)" else self.obtener_resolucion_numerica(calidad_sel)
@@ -903,7 +894,7 @@ class NeonConverter(ctk.CTk):
 
                     opts = {
                         'format': formato_string,
-                        'ffmpeg_location': ruta_binarios,  # <--- CLAVE PARA EL EXE
+                        'ffmpeg_location': ruta_binarios,  
                         'outtmpl': os.path.join(ruta, '%(title)s.%(ext)s'),
                         'merge_output_format': contenedor,
                         'restrictfilenames': True,
@@ -975,7 +966,7 @@ class NeonConverter(ctk.CTk):
 
                 self.limpiar_basura()
             else:
-                self.lbl_estado.configure(text="🚫 Error", text_color=COLOR_ROJO)
+                self.lbl_estado.configure(text=" Error", text_color=COLOR_ROJO)
 
     def finalizar_video(self, exito, resolucion, ruta_archivo, tipo_res):
         """Finalización para video"""
@@ -1004,7 +995,7 @@ class NeonConverter(ctk.CTk):
 
             self.limpiar_basura()
         else:
-            self.lbl_estado.configure(text="🚫 Error", text_color=COLOR_ROJO)
+            self.lbl_estado.configure(text=" Error", text_color=COLOR_ROJO)
 
     def finalizar(self, exito, error=""):
         """Finalización general"""
