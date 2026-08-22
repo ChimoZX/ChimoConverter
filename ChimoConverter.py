@@ -803,130 +803,135 @@ class NeonConverter(ctk.CTk):
         self.archivos_rastreados.clear()
 
     def proceso_descarga_con_caratulas(self):
-            """Proceso de descarga corregido para .exe: Incluye ffmpeg_location"""
-            try:
-                if getattr(sys, 'frozen', False):
-                    ruta_binarios = sys._MEIPASS
-                else:
-                    ruta_binarios = os.path.dirname(os.path.abspath(__file__))
+        """Proceso de descarga corregido para encontrar FFmpeg correctamente"""
+        try:
+            url_in = self.entry_url.get().strip()
+            ruta = self.ruta_var.get()
+            tab_actual = self.tabview.get()
 
-                url_in = self.entry_url.get().strip()
-                ruta = self.ruta_var.get()
-                tab_actual = self.tabview.get()
+            if not self.info_video_actual:
+                self.after(0, lambda: self.finalizar(False, "Analiza el video primero"))
+                return
 
-                if not self.info_video_actual:
-                    self.after(0, lambda: self.finalizar(False, "Analiza el video primero"))
+            titulo = self.info_video_actual.get('title', 'archivo_descargado')
+            artista = self.info_video_actual.get('uploader', 'Desconocido')
+            mejor_thumbnail_url = obtener_mejor_thumbnail_url(self.info_video_actual)
+            
+            # --- CORRECCIÓN: Configurar ruta de ffmpeg inteligentemente ---
+            ffmpeg_dir = None
+            if self.ruta_ffmpeg and self.ruta_ffmpeg not in ["ffmpeg", "ffmpeg.exe"]:
+                ffmpeg_dir = os.path.dirname(self.ruta_ffmpeg)
+            
+            # --- SECCIÓN DE AUDIO ---
+            if tab_actual == "Audio":
+                formato_seleccionado = self.combo_formato_audio.get()
+                calidad_texto = self.combo_calidad_audio.get()
+                calidad_num = int(calidad_texto.split()[0])
+
+                formatos_map = {"MP3": "mp3", "AAC": "m4a", "OPUS": "opus", "FLAC": "flac", "WAV": "wav"}
+                cod_ffmpeg = "mp3"
+                for key, val in formatos_map.items():
+                    if key in formato_seleccionado:
+                        cod_ffmpeg = val
+                        break
+
+                con_caratula = "sin carátula" not in formato_seleccionado.lower() and cod_ffmpeg != 'wav'
+
+                opts = {
+                    'format': 'bestaudio/best',
+                    'outtmpl': os.path.join(ruta, '%(title)s.%(ext)s'),
+                    'restrictfilenames': True,
+                    'overwrites': True,
+                    'noplaylist': not self.playlist_mode.get(),
+                    'ignoreerrors': True,
+                    'match_filter': self.filtro_cancelacion,
+                    'progress_hooks': [self.hook_progreso],
+                    'http_headers': HEADERS_NAVEGADOR,
+                    'postprocessors': [{
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': cod_ffmpeg,
+                        'preferredquality': str(calidad_num),
+                    }]
+                }
+                
+                if ffmpeg_dir:
+                    opts['ffmpeg_location'] = ffmpeg_dir
+
+                self.after(0, lambda: self.lbl_estado.configure(text=f"Bajando {cod_ffmpeg.upper()}...", text_color=COLOR_MORADO))
+                
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    ydl.download([url_in])
+
+                if self.cancelar_flag:
+                    self.limpiar_basura()
                     return
 
-                titulo = self.info_video_actual.get('title', 'archivo_descargado')
-                artista = self.info_video_actual.get('uploader', 'Desconocido')
-                mejor_thumbnail_url = obtener_mejor_thumbnail_url(self.info_video_actual)
+                archivo_descargado = buscar_archivo_descargado(ruta, titulo)
                 
-                # --- SECCIÓN DE AUDIO ---
-                if tab_actual == "Audio":
-                    formato_seleccionado = self.combo_formato_audio.get()
-                    calidad_texto = self.combo_calidad_audio.get()
-                    calidad_num = int(calidad_texto.split()[0])
+                if archivo_descargado:
+                    if con_caratula and mejor_thumbnail_url and self.ruta_ffmpeg:
+                        self.after(0, lambda: self.lbl_estado.configure(text="Incrustando carátula...", text_color=COLOR_AZUL))
+                        import hashlib
+                        hash_t = hashlib.md5(titulo.encode()).hexdigest()[:8]
+                        caratula_temp = os.path.join(ruta, f'thumb_{hash_t}.jpg')
+                        
+                        if descargar_caratula_mejorada(mejor_thumbnail_url, caratula_temp):
+                            incrustar_caratula_con_ffprobe(archivo_descargado, caratula_temp, titulo, artista)
+                            if os.path.exists(caratula_temp): os.remove(caratula_temp)
 
-                    formatos_map = {"MP3": "mp3", "AAC": "m4a", "OPUS": "opus", "FLAC": "flac", "WAV": "wav"}
-                    cod_ffmpeg = "mp3"
-                    for key, val in formatos_map.items():
-                        if key in formato_seleccionado:
-                            cod_ffmpeg = val
-                            break
-
-                    con_caratula = "sin carátula" not in formato_seleccionado.lower() and cod_ffmpeg != 'wav'
-
-                    opts = {
-                        'format': 'bestaudio/best',
-                        'ffmpeg_location': ruta_binarios,  
-                        'outtmpl': os.path.join(ruta, '%(title)s.%(ext)s'),
-                        'restrictfilenames': True,
-                        'overwrites': True,
-                        'noplaylist': not self.playlist_mode.get(),
-                        'ignoreerrors': True,
-                        'match_filter': self.filtro_cancelacion,
-                        'progress_hooks': [self.hook_progreso],
-                        'http_headers': HEADERS_NAVEGADOR,
-                        'postprocessors': [{
-                            'key': 'FFmpegExtractAudio',
-                            'preferredcodec': cod_ffmpeg,
-                            'preferredquality': str(calidad_num),
-                        }]
-                    }
-
-                    self.after(0, lambda: self.lbl_estado.configure(text=f"Bajando {cod_ffmpeg.upper()}...", text_color=COLOR_MORADO))
-                    
-                    with yt_dlp.YoutubeDL(opts) as ydl:
-                        ydl.download([url_in])
-
-                    if self.cancelar_flag:
-                        self.limpiar_basura()
-                        return
-
-                    archivo_descargado = buscar_archivo_descargado(ruta, titulo)
-                    
-                    if archivo_descargado:
-                        if con_caratula and mejor_thumbnail_url and self.ruta_ffmpeg:
-                            self.after(0, lambda: self.lbl_estado.configure(text="Incrustando carátula...", text_color=COLOR_AZUL))
-                            import hashlib
-                            hash_t = hashlib.md5(titulo.encode()).hexdigest()[:8]
-                            caratula_temp = os.path.join(ruta, f'thumb_{hash_t}.jpg')
-                            
-                            if descargar_caratula_mejorada(mejor_thumbnail_url, caratula_temp):
-                                incrustar_caratula_con_ffprobe(archivo_descargado, caratula_temp, titulo, artista)
-                                if os.path.exists(caratula_temp): os.remove(caratula_temp)
-
-                        self.after(0, lambda: self.finalizar_audio(True, formato_seleccionado, calidad_texto, con_caratula, archivo_descargado))
-                    else:
-                        self.after(0, lambda: self.finalizar(False, "No se encontró el archivo de audio"))
-
+                    self.after(0, lambda: self.finalizar_audio(True, formato_seleccionado, calidad_texto, con_caratula, archivo_descargado))
                 else:
-                    calidad_sel = self.combo_calidad.get()
-                    resolucion = self.max_resolucion if calidad_sel == "Mejor Calidad (Auto)" else self.obtener_resolucion_numerica(calidad_sel)
+                    self.after(0, lambda: self.finalizar(False, "No se encontró el archivo de audio"))
 
-                    if resolucion <= 1080:
-                        formato_string = f"bestvideo[height<={resolucion}][ext=mp4]+bestaudio[ext=m4a]/best[height<={resolucion}][ext=mp4]/best"
-                        contenedor = "mp4"
-                    else:
-                        formato_string = f"bestvideo[height<={resolucion}]+bestaudio/best[height<={resolucion}]"
-                        contenedor = "mkv"
+            # --- SECCIÓN DE VIDEO ---
+            else:
+                calidad_sel = self.combo_calidad.get()
+                resolucion = self.max_resolucion if calidad_sel == "Mejor Calidad (Auto)" else self.obtener_resolucion_numerica(calidad_sel)
 
-                    opts = {
-                        'format': formato_string,
-                        'ffmpeg_location': ruta_binarios,  
-                        'outtmpl': os.path.join(ruta, '%(title)s.%(ext)s'),
-                        'merge_output_format': contenedor,
-                        'restrictfilenames': True,
-                        'overwrites': True,
-                        'noplaylist': not self.playlist_mode.get(),
-                        'ignoreerrors': True,
-                        'progress_hooks': [self.hook_progreso],
-                        'http_headers': HEADERS_NAVEGADOR,
-                        'quiet': True,
-                    }
+                if resolucion <= 1080:
+                    formato_string = f"bestvideo[height<={resolucion}][ext=mp4]+bestaudio[ext=m4a]/best[height<={resolucion}][ext=mp4]/best"
+                    contenedor = "mp4"
+                else:
+                    formato_string = f"bestvideo[height<={resolucion}]+bestaudio/best[height<={resolucion}]"
+                    contenedor = "mkv"
 
-                    self.after(0, lambda: self.lbl_estado.configure(text=f"Bajando {resolucion}p ({contenedor.upper()})...", text_color=COLOR_MORADO))
+                opts = {
+                    'format': formato_string,
+                    'outtmpl': os.path.join(ruta, '%(title)s.%(ext)s'),
+                    'merge_output_format': contenedor,
+                    'restrictfilenames': True,
+                    'overwrites': True,
+                    'noplaylist': not self.playlist_mode.get(),
+                    'ignoreerrors': True,
+                    'progress_hooks': [self.hook_progreso],
+                    'http_headers': HEADERS_NAVEGADOR,
+                    'quiet': True,
+                }
+                
+                if ffmpeg_dir:
+                    opts['ffmpeg_location'] = ffmpeg_dir
 
-                    with yt_dlp.YoutubeDL(opts) as ydl:
-                        ydl.download([url_in])
+                self.after(0, lambda: self.lbl_estado.configure(text=f"Bajando {resolucion}p ({contenedor.upper()})...", text_color=COLOR_MORADO))
 
-                    if self.cancelar_flag:
-                        self.limpiar_basura()
-                        return
+                with yt_dlp.YoutubeDL(opts) as ydl:
+                    ydl.download([url_in])
 
-                    time.sleep(2)
-                    archivo_descargado = buscar_archivo_descargado(ruta, titulo)
+                if self.cancelar_flag:
+                    self.limpiar_basura()
+                    return
 
-                    if archivo_descargado:
-                        tipo_res = "4k" if resolucion >= 2160 else ("2k" if resolucion >= 1440 else "")
-                        self.after(0, lambda: self.finalizar_video(True, resolucion, archivo_descargado, tipo_res))
-                    else:
-                        self.after(0, lambda: self.finalizar(False, "No se encontró el archivo de video"))
+                time.sleep(2)
+                archivo_descargado = buscar_archivo_descargado(ruta, titulo)
 
-            except Exception as e:
-                print(f"❌ ERROR CRÍTICO: {traceback.format_exc()}")
-                self.after(0, lambda: self.finalizar(False, f"Error: {str(e)[:100]}"))
+                if archivo_descargado:
+                    tipo_res = "4k" if resolucion >= 2160 else ("2k" if resolucion >= 1440 else "")
+                    self.after(0, lambda: self.finalizar_video(True, resolucion, archivo_descargado, tipo_res))
+                else:
+                    self.after(0, lambda: self.finalizar(False, "No se encontró el archivo de video"))
+
+        except Exception as e:
+            print(f"❌ ERROR CRÍTICO: {traceback.format_exc()}")
+            self.after(0, lambda: self.finalizar(False, f"Error: {str(e)[:100]}"))
 
     def finalizar_audio(self, exito, formato, calidad, tiene_caratula, ruta_archivo):
             """Finalización para audio"""
